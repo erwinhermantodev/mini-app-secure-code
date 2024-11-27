@@ -1,8 +1,8 @@
 # compiled output
-/backend-service/dist
-/backend-service/node_modules
-/ui/dist
-/ui/node_modules
+/backend/dist
+/backend/node_modules
+/frontend/dist
+/frontend/node_modules
 
 # Logs
 logs
