@@ -5,8 +5,9 @@ import {
   Length,
   Matches,
 } from 'class-validator';
-import { Exclude, Expose } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 
+// DTO for updating profile
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
@@ -32,6 +33,16 @@ export class UpdateProfileDto {
   currentPassword?: string;
 }
 
+// Role DTO nested within Profile Response
+export class RoleDto {
+  @Expose()
+  id: string;
+
+  @Expose()
+  name: string;
+}
+
+// Updated Profile Response DTO
 export class ProfileResponseDto {
   @Expose()
   id: string;
@@ -43,7 +54,8 @@ export class ProfileResponseDto {
   email: string;
 
   @Expose()
-  role: string;
+  @Type(() => RoleDto)
+  role: RoleDto;
 
   @Expose()
   createdAt: Date;

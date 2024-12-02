@@ -7,17 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
+  id        String  @id @default(cuid())
+  email     String  @unique
   name      String
   password  String
-  role      Role     @default(USER)
+  roleId    String  @default("1")
+  role      Role    @relation(fields: [roleId], references: [id])
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  permissions Permission[] @relation("RolePermissions")
+  users       User[]
+}
+
+model Permission {
+  id       String  @id @default(cuid())
+  action   String  @unique
+  roles    Role[]  @relation("RolePermissions")
 }

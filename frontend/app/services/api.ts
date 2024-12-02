@@ -1,48 +1,66 @@
-// src/services/api.ts
-import axios from "axios";
-import { useAuth } from "../context/authContext";
+const BASE_URL = "http://localhost:3000/auth";
 
-const apiClient = axios.create({
-  baseURL: "http://localhost:3000/api", // Replace with your API base URL
-});
-
-apiClient.interceptors.request.use((config) => {
-  const { token } = useAuth();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-export const loginUser = async (credentials: {
-  email: string;
-  password: string;
-}) => {
-  try {
-    const response = await apiClient.post("/auth/login", credentials);
-    return response.data.accessToken;
-  } catch (error) {
-    throw new Error("Login failed");
-  }
+export const registerUser = async (
+  email: string,
+  name: string,
+  password: string
+) => {
+  const response = await fetch(`${BASE_URL}/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, name, password }),
+  });
+  return response.json();
 };
 
-export const getUserProfile = async () => {
-  try {
-    const response = await apiClient.get("/auth/profile");
-    return response.data;
-  } catch (error) {
-    throw new Error("Unable to fetch profile");
-  }
+export const loginUser = async (email: string, password: string) => {
+  const response = await fetch(`${BASE_URL}/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  console.log("response");
+  console.log(response);
+  return response.json();
 };
 
-export const updateUserProfile = async (profile: {
-  name: string;
-  email: string;
-}) => {
-  try {
-    const response = await apiClient.put("/auth/profile", profile);
-    return response.data;
-  } catch (error) {
-    throw new Error("Profile update failed");
-  }
+export const getUserProfile = async (token: string) => {
+  const response = await fetch(`${BASE_URL}/profile`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  console.log(response);
+  return response.json();
+};
+
+export const updateUserProfile = async (
+  token: string,
+  name: string,
+  email: string
+) => {
+  const response = await fetch(`${BASE_URL}/profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ name, email }),
+  });
+  return response.json();
+};
+
+export const updatePassword = async (
+  token: string,
+  currentPassword: string,
+  password: string
+) => {
+  const response = await fetch(`${BASE_URL}/profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ currentPassword, password }),
+  });
+  return response.json();
 };
