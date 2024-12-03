@@ -10,6 +10,8 @@ export const registerUser = async (
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, name, password }),
   });
+  console.log("response");
+  console.log(response);
   return response.json();
 };
 

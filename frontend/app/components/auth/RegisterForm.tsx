@@ -25,6 +25,7 @@ const RegisterForm: React.FC = () => {
       navigate("/profile");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
+      navigate("/register");
     }
   };
 
