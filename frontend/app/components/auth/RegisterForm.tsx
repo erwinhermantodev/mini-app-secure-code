@@ -1,29 +1,28 @@
 import React, { useState } from "react";
 import { Form, useNavigate } from "@remix-run/react";
-import { useAuth } from "~/contexts/AuthContext";
+import { registerUser } from "../../services/api";
 
-export const RegisterForm: React.FC = () => {
+const RegisterForm: React.FC = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const { register } = useAuth();
+  // const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Basic validation
     if (password !== confirmPassword) {
       setError("Passwords do not match");
       return;
     }
 
     try {
-      await register(email, name, password);
-      navigate("/dashboard");
+      await registerUser(email, name, password);
+      navigate("/profile");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     }

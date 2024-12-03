@@ -124,6 +124,12 @@ const Login = () => {
             </div>
           )}
 
+          <a
+            href="/register"
+            className="inline-block align-baseline font-bold text-sm text-blue-500 hover:text-blue-800"
+          >
+            Register
+          </a>
           <div className="text-center text-sm text-gray-600 mt-4">
             <a
               href="/forgot-password"
