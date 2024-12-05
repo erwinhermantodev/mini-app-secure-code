@@ -6,6 +6,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./backend
+
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
@@ -20,11 +24,9 @@ jobs:
           node-version: "18"
 
       - name: Install dependencies
-        working-directory: ./backend
         run: npm install
 
       - name: Build
-        working-directory: ./backend
         run: npm run build
 
       - name: Deploy to Server
@@ -34,8 +36,8 @@ jobs:
           username: "erwindevmail"
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
-            cd /path/to/project/backend
+            cd /home/erwindevmail/mini-app/backend
             git pull origin master
             npm install
             npm run build
-            pm2 restart app
+            pm2 restart backend
