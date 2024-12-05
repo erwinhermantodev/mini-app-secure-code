@@ -6,7 +6,8 @@ import {
   LiveReload,
   ScrollRestoration,
 } from "@remix-run/react";
-import type { LinksFunction } from "@remix-run/node";
+import type { LinksFunction, ActionFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { AuthProvider } from "./context/authContext";
 
 import "./tailwind.css";
@@ -23,6 +24,21 @@ export const links: LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
 ];
+
+// Handle POST requests to "/"
+export const action: ActionFunction = async ({ request }) => {
+  const formData = await request.formData();
+  const someField = formData.get("someField");
+
+  if (!someField) {
+    return json({ error: "Missing someField" }, { status: 400 });
+  }
+
+  // Perform your desired operation with `someField`
+  console.log("Received data in root action:", someField);
+
+  return json({ success: true, message: "Data received successfully" });
+};
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
