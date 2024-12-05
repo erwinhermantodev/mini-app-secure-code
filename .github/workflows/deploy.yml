@@ -22,7 +22,7 @@ jobs:
           script: |
             cd /home/erwindevmail/mini-app-secure-code
             git pull
-            cd /backend
+            cd /home/erwindevmail/mini-app-secure-code
             docker compose down
             docker compose build --no-cache
             docker compose up -d
