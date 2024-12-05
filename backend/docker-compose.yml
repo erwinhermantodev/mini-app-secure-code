@@ -1,16 +1,14 @@
 version: '3.8'
-services:
-  database:
-    image: postgres:13
-    restart: always
-    environment:
-      POSTGRES_USER: nestuser
-      POSTGRES_PASSWORD: nestpassword
-      POSTGRES_DB: secure_app
-    ports:
-      - '5433:5432'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
 
-volumes:
-  postgres_data:
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+    ports:
+      - '3000:3000'
+    restart: always
