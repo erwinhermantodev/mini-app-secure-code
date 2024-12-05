@@ -5,26 +5,22 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: production
-      url: https://103.187.146.181
-
-    defaults:
-      run:
-        working-directory: ./backend
+    environment: production
 
     env:
-      DATABASE_URL: ${{ vars.DATABASE_URL }}
-      JWT_SECRET: ${{ vars.JWT_SECRET }}
-      JWT_EXPIRATION: ${{ vars.JWT_EXPIRATION }}
+      DATABASE_URL: postgresql://nestuser:nestpassword@103.187.146.181:5433/secure_app
+      JWT_SECRET: secure_jwt_secret
+      JWT_EXPIRATION: 3600s
 
     steps:
       - uses: actions/checkout@v4
-      - name: Debug Variables
+
+      - name: Debug Environment
         run: |
-          if [ -n "$DATABASE_URL" ]; then echo "DATABASE_URL is set"; else echo "DATABASE_URL is not set"; fi
-          if [ -n "$JWT_SECRET" ]; then echo "JWT_SECRET is set"; else echo "JWT_SECRET is not set"; fi
-          if [ -n "$JWT_EXPIRATION" ]; then echo "JWT_EXPIRATION is set"; else echo "JWT_EXPIRATION is not set"; fi
+          echo "Environment check:"
+          echo $DATABASE_URL
+          echo $JWT_SECRET
+          echo $JWT_EXPIRATION
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
@@ -32,11 +28,9 @@ jobs:
           host: "103.187.146.181"
           username: "erwindevmail"
           password: ${{ secrets.SSH_PASSWORD }}
-          debug: true
           envs: DATABASE_URL,JWT_SECRET,JWT_EXPIRATION
           script: |
             cd /home/erwindevmail/mini-app/backend
-            echo "Current path: $PWD"
             git pull origin master
             npm install
             npm run build
