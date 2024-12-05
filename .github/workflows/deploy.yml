@@ -29,7 +29,7 @@ jobs:
           username: "erwindevmail"
           password: ${{ vars.SSH_PASSWORD }}
           script: |
-            cd /home/erwindevmail/mini-app/backend
+            cd /home/erwindevmail/mini-app-secure-code/backend
             git pull origin master
             npm install
             npm run build
