@@ -1,0 +1,39 @@
+on:
+  push:
+    branches: [master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: "103.187.146.181"
+          username: "erwindevmail"
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd /path/to/project
+            git pull origin master
+            npm install
+            npm run build
+            pm2 restart app # Adjust app name as needed
