@@ -5,32 +5,26 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
+    environment:
+      name: production
+      url: https://103.187.146.181
 
     defaults:
       run:
         working-directory: ./backend
 
+    env:
+      DATABASE_URL: ${{ vars.DATABASE_URL }}
+      JWT_SECRET: ${{ vars.JWT_SECRET }}
+      JWT_EXPIRATION: ${{ vars.JWT_EXPIRATION }}
+
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "18"
-
-      - name: Debug secrets
+      - name: Debug Variables
         run: |
-          echo "DATABASE_URL exists: ${{ secrets.DATABASE_URL != '' }}"
-          echo "JWT_SECRET exists: ${{ secrets.JWT_SECRET != '' }}"
-          echo "JWT_EXPIRATION exists: ${{ secrets.JWT_EXPIRATION != '' }}"
-          echo "SSH_PASSWORD exists: ${{ secrets.SSH_PASSWORD != '' }}"
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build
-        run: npm run build
+          if [ -n "$DATABASE_URL" ]; then echo "DATABASE_URL is set"; else echo "DATABASE_URL is not set"; fi
+          if [ -n "$JWT_SECRET" ]; then echo "JWT_SECRET is set"; else echo "JWT_SECRET is not set"; fi
+          if [ -n "$JWT_EXPIRATION" ]; then echo "JWT_EXPIRATION is set"; else echo "JWT_EXPIRATION is not set"; fi
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
@@ -38,12 +32,11 @@ jobs:
           host: "103.187.146.181"
           username: "erwindevmail"
           password: ${{ secrets.SSH_PASSWORD }}
-          envs: DATABASE_URL,JWT_SECRET,JWT_EXPIRATION
           debug: true
+          envs: DATABASE_URL,JWT_SECRET,JWT_EXPIRATION
           script: |
-            echo "Current directory: $(pwd)"
             cd /home/erwindevmail/mini-app/backend
-            echo "After cd: $(pwd)"
+            echo "Current path: $PWD"
             git pull origin master
             npm install
             npm run build
