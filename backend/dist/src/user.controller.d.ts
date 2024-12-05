@@ -3,25 +3,25 @@ export declare class UserController {
     private prisma;
     constructor(prisma: PrismaService);
     getUserProfile(req: any): Promise<{
-        id: string;
-        email: string;
-        name: string;
-        createdAt: Date;
         role: {
             id: string;
             name: string;
         };
+        id: string;
+        name: string;
+        email: string;
+        createdAt: Date;
     }>;
     updateProfile(req: any, updateData: {
         name?: string;
         email?: string;
     }): Promise<{
-        id: string;
-        email: string;
-        name: string;
         role: {
             id: string;
             name: string;
         };
+        id: string;
+        name: string;
+        email: string;
     }>;
 }

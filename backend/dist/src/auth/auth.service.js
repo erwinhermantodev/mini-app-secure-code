@@ -20,6 +20,55 @@ let AuthService = class AuthService {
         this.prisma = prisma;
         this.jwtService = jwtService;
         this.configService = configService;
+        this.loginAttempts = new Map();
+        setInterval(() => this.cleanupAttempts(), 15 * 60 * 1000);
+    }
+    cleanupAttempts() {
+        const now = Date.now();
+        for (const [key, attempt] of this.loginAttempts.entries()) {
+            if (now - attempt.lastAttempt > 15 * 60 * 1000) {
+                this.loginAttempts.delete(key);
+            }
+        }
+    }
+    trackLoginAttempt(email) {
+        const now = Date.now();
+        const key = email.toLowerCase();
+        const existingAttempt = this.loginAttempts.get(key) || {
+            attempts: 0,
+            lastAttempt: now,
+            blockedUntil: 0,
+        };
+        if (existingAttempt.blockedUntil > now) {
+            throw new common_1.UnauthorizedException('Account temporarily blocked. Please try again later.');
+        }
+        if (now - existingAttempt.lastAttempt > 15 * 60 * 1000) {
+            existingAttempt.attempts = 0;
+        }
+        existingAttempt.attempts++;
+        existingAttempt.lastAttempt = now;
+        if (existingAttempt.attempts > 5) {
+            existingAttempt.blockedUntil = now + 15 * 60 * 1000;
+            this.loginAttempts.set(key, existingAttempt);
+            console.warn(`Login attempts blocked for email: ${email}`);
+            throw new common_1.UnauthorizedException('Too many login attempts. Account temporarily blocked.');
+        }
+        this.loginAttempts.set(key, existingAttempt);
+        return true;
+    }
+    resetLoginAttempts(email) {
+        const key = email.toLowerCase();
+        this.loginAttempts.delete(key);
+    }
+    async login(loginDto) {
+        const { email, password } = loginDto;
+        this.trackLoginAttempt(email);
+        const user = await this.prisma.user.findUnique({ where: { email } });
+        if (!user || !(await bcrypt.compare(password, user.password))) {
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
+        this.resetLoginAttempts(email);
+        return this.generateTokens(user);
     }
     async register(registerDto) {
         const { email, password, name } = registerDto;
@@ -46,13 +95,20 @@ let AuthService = class AuthService {
             throw new common_1.ConflictException('Registration failed');
         }
     }
-    async login(loginDto) {
-        const { email, password } = loginDto;
-        const user = await this.prisma.user.findUnique({ where: { email } });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            throw new common_1.UnauthorizedException('Invalid credentials');
-        }
-        return this.generateTokens(user);
+    generateTokens(user) {
+        const payload = { sub: user.id, email: user.email };
+        const accessToken = this.jwtService.sign(payload, {
+            secret: this.configService.get('JWT_SECRET'),
+            expiresIn: '1h',
+        });
+        const refreshToken = this.jwtService.sign(payload, {
+            secret: this.configService.get('JWT_REFRESH_SECRET'),
+            expiresIn: '7d',
+        });
+        return {
+            accessToken,
+            refreshToken,
+        };
     }
     async validateUser(email, pass) {
         const user = await this.prisma.user.findUnique({
@@ -63,23 +119,6 @@ let AuthService = class AuthService {
             return result;
         }
         return null;
-    }
-    generateTokens(user) {
-        const payload = { sub: user.id, email: user.email };
-        console.log('Generating tokens for user:', user);
-        const accessToken = this.jwtService.sign(payload, {
-            secret: this.configService.get('JWT_SECRET'),
-            expiresIn: '1h',
-        });
-        const refreshToken = this.jwtService.sign(payload, {
-            secret: this.configService.get('JWT_REFRESH_SECRET'),
-            expiresIn: '7d',
-        });
-        console.log('Generated tokens:', { accessToken, refreshToken });
-        return {
-            accessToken,
-            refreshToken,
-        };
     }
     async getProfileById(userId) {
         if (!userId) {

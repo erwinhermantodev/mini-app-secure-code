@@ -6,17 +6,21 @@ export declare class AuthService {
     private prisma;
     private jwtService;
     private configService;
+    private loginAttempts;
     constructor(prisma: PrismaService, jwtService: JwtService, configService: ConfigService);
-    register(registerDto: RegisterDto): Promise<{
-        accessToken: string;
-        refreshToken: string;
-    }>;
+    private cleanupAttempts;
+    private trackLoginAttempt;
+    private resetLoginAttempts;
     login(loginDto: LoginDto): Promise<{
         accessToken: string;
         refreshToken: string;
     }>;
-    validateUser(email: string, pass: string): Promise<any>;
+    register(registerDto: RegisterDto): Promise<{
+        accessToken: string;
+        refreshToken: string;
+    }>;
     private generateTokens;
+    validateUser(email: string, pass: string): Promise<any>;
     getProfileById(userId: string): Promise<ProfileResponseDto>;
     updateProfile(userId: string, updateProfileDto: UpdateProfileDto): Promise<ProfileResponseDto>;
 }

@@ -9,13 +9,13 @@ export declare class AdminController {
             count: number;
         }[];
         recentUsers: {
-            id: string;
-            email: string;
-            name: string;
-            createdAt: Date;
             role: {
                 name: string;
             };
+            id: string;
+            name: string;
+            email: string;
+            createdAt: Date;
         }[];
     }>;
 }

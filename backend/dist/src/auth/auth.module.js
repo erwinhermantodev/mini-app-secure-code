@@ -15,12 +15,19 @@ const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
 const local_strategy_1 = require("./local.strategy");
 const jwt_strategy_1 = require("./jwt.strategy");
+const throttler_1 = require("@nestjs/throttler");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
+            throttler_1.ThrottlerModule.forRoot([
+                {
+                    ttl: 60000,
+                    limit: 5,
+                },
+            ]),
             config_1.ConfigModule,
             passport_1.PassportModule,
             jwt_1.JwtModule.registerAsync({

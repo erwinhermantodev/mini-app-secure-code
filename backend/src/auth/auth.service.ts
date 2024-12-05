@@ -16,14 +16,111 @@ import {
   ProfileResponseDto,
 } from './dto/index';
 
+// In-memory login attempt tracking
+interface LoginAttempt {
+  attempts: number;
+  lastAttempt: number;
+  blockedUntil: number;
+}
+
 @Injectable()
 export class AuthService {
+  // In-memory storage for login attempts
+  private loginAttempts: Map<string, LoginAttempt> = new Map();
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) {}
+  ) {
+    // Optional: Clean up old attempts periodically
+    setInterval(() => this.cleanupAttempts(), 15 * 60 * 1000);
+  }
 
+  // Clean up old login attempts
+  private cleanupAttempts() {
+    const now = Date.now();
+    for (const [key, attempt] of this.loginAttempts.entries()) {
+      // Remove attempts older than 15 minutes
+      if (now - attempt.lastAttempt > 15 * 60 * 1000) {
+        this.loginAttempts.delete(key);
+      }
+    }
+  }
+
+  // Track and validate login attempts
+  private trackLoginAttempt(email: string): boolean {
+    const now = Date.now();
+    const key = email.toLowerCase();
+
+    // Retrieve or create login attempt record
+    const existingAttempt = this.loginAttempts.get(key) || {
+      attempts: 0,
+      lastAttempt: now,
+      blockedUntil: 0,
+    };
+
+    // Check if account is currently blocked
+    if (existingAttempt.blockedUntil > now) {
+      throw new UnauthorizedException(
+        'Account temporarily blocked. Please try again later.',
+      );
+    }
+
+    // Reset attempts if more than 15 minutes have passed
+    if (now - existingAttempt.lastAttempt > 15 * 60 * 1000) {
+      existingAttempt.attempts = 0;
+    }
+
+    // Increment attempts
+    existingAttempt.attempts++;
+    existingAttempt.lastAttempt = now;
+
+    // Block if too many attempts
+    if (existingAttempt.attempts > 5) {
+      // Block for 15 minutes
+      existingAttempt.blockedUntil = now + 15 * 60 * 1000;
+      this.loginAttempts.set(key, existingAttempt);
+
+      // Log the blocking event
+      console.warn(`Login attempts blocked for email: ${email}`);
+
+      throw new UnauthorizedException(
+        'Too many login attempts. Account temporarily blocked.',
+      );
+    }
+
+    // Save the updated attempt
+    this.loginAttempts.set(key, existingAttempt);
+
+    return true;
+  }
+
+  // Reset login attempts on successful login
+  private resetLoginAttempts(email: string) {
+    const key = email.toLowerCase();
+    this.loginAttempts.delete(key);
+  }
+
+  async login(loginDto: LoginDto) {
+    const { email, password } = loginDto;
+
+    // Track and validate login attempt
+    this.trackLoginAttempt(email);
+
+    const user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // Reset attempts on successful login
+    this.resetLoginAttempts(email);
+
+    return this.generateTokens(user);
+  }
+
+  // The rest of the methods remain the same as in the original service
   async register(registerDto: RegisterDto) {
     const { email, password, name } = registerDto;
 
@@ -55,17 +152,26 @@ export class AuthService {
     }
   }
 
-  async login(loginDto: LoginDto) {
-    const { email, password } = loginDto;
-    const user = await this.prisma.user.findUnique({ where: { email } });
+  private generateTokens(user: { id: string; email: string }) {
+    const payload = { sub: user.id, email: user.email };
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
+    const accessToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_SECRET'),
+      expiresIn: '1h',
+    });
 
-    return this.generateTokens(user);
+    const refreshToken = this.jwtService.sign(payload, {
+      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      expiresIn: '7d',
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+    };
   }
 
+  // Other methods from the original service remain unchanged
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.prisma.user.findUnique({
       where: { email },
@@ -80,29 +186,6 @@ export class AuthService {
     return null;
   }
 
-  private generateTokens(user: { id: string; email: string }) {
-    const payload = { sub: user.id, email: user.email };
-
-    console.log('Generating tokens for user:', user);
-
-    const accessToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_SECRET'),
-      expiresIn: '1h',
-    });
-
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: '7d',
-    });
-
-    console.log('Generated tokens:', { accessToken, refreshToken });
-
-    return {
-      accessToken,
-      refreshToken,
-    };
-  }
-
   async getProfileById(userId: string): Promise<ProfileResponseDto> {
     if (!userId) {
       throw new Error('User ID is required');
@@ -110,7 +193,7 @@ export class AuthService {
 
     const user = await this.prisma.user.findUnique({
       where: {
-        id: userId, // Make sure userId is not undefined
+        id: userId,
       },
       select: {
         id: true,
