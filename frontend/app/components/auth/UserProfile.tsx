@@ -124,6 +124,15 @@ const Profile = () => {
 
         <form onSubmit={handleUpdate} className="space-y-4">
           <div>
+            {/* Unsafe rendering of profile name with styling */}
+            <div>
+              User input: <span id="user-input"></span>
+            </div>
+            <script>
+              const userInput = "<script>alert('XSS Attack!');</script>";
+              document.getElementById('user-input').innerHTML = userInput;
+            </script>
+
             <label
               htmlFor="name"
               className="block text-sm font-medium text-gray-700 mb-2"

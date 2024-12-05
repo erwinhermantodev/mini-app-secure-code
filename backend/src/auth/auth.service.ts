@@ -106,6 +106,12 @@ export class AuthService {
     const { email, password } = loginDto;
 
     // Track and validate login attempt
+    // const query = `SELECT * FROM "public"."User" WHERE name = ${email}`;
+    // const users = await this.prisma.$queryRawUnsafe(query, email);
+    // // console.log(unsafeQuery);
+    // console.log('users');
+    // console.log(users);
+    // return users;
     this.trackLoginAttempt(email);
 
     const user = await this.prisma.user.findUnique({ where: { email } });
