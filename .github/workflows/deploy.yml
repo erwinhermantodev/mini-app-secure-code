@@ -5,12 +5,13 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production
+    environment: master
 
     env:
-      DATABASE_URL: postgresql://nestuser:nestpassword@103.187.146.181:5433/secure_app
-      JWT_SECRET: secure_jwt_secret
-      JWT_EXPIRATION: 3600s
+      DATABASE_URL: ${{ vars.DATABASE_URL }}
+      JWT_SECRET: ${{ vars.JWT_SECRET }}
+      JWT_EXPIRATION: ${{ vars.JWT_EXPIRATION }}
+      SSH_PASSWORD: ${{ vars.SSH_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -18,17 +19,15 @@ jobs:
       - name: Debug Environment
         run: |
           echo "Environment check:"
-          echo $DATABASE_URL
-          echo $JWT_SECRET
-          echo $JWT_EXPIRATION
+          echo "SSH_PASSWORD exists: ${{ vars.SSH_PASSWORD != '' }}"
+          echo "DATABASE_URL exists: ${{ vars.DATABASE_URL != '' }}"
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
           host: "103.187.146.181"
           username: "erwindevmail"
-          password: "1@nekketsU"
-          envs: DATABASE_URL,JWT_SECRET,JWT_EXPIRATION
+          password: ${{ vars.SSH_PASSWORD }}
           script: |
             cd /home/erwindevmail/mini-app/backend
             git pull origin master
