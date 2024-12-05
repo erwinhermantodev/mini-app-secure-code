@@ -1,11 +1,8 @@
-FROM node:18-alpine
+FROM node:18 AS builder
 
 WORKDIR /app
 
-# Set Prisma engine checksum ignore
-ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
-
-# Copy package files and install dependencies
+# Install dependencies
 COPY package*.json ./
 RUN npm install
 
@@ -17,10 +14,21 @@ RUN npx prisma generate
 COPY . .
 RUN npm run build
 
-EXPOSE 3000
+# Production stage
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy from builder stage
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/package*.json ./
 
 # Add script to handle Prisma initialization
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 3000
 
 ENTRYPOINT ["docker-entrypoint.sh"]
