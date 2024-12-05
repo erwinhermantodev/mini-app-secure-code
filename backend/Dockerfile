@@ -2,6 +2,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Set Prisma engine checksum ignore
+ENV PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
+
 # Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
