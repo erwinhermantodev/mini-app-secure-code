@@ -54,9 +54,11 @@ let AuthService = class AuthService {
         }
         return this.generateTokens(user);
     }
-    async validateUser(email, password) {
-        const user = await this.prisma.user.findUnique({ where: { email } });
-        if (user && (await bcrypt.compare(password, user.password))) {
+    async validateUser(email, pass) {
+        const user = await this.prisma.user.findUnique({
+            where: { email },
+        });
+        if (user && (await bcrypt.compare(pass, user.password))) {
             const { password, ...result } = user;
             return result;
         }
@@ -67,7 +69,7 @@ let AuthService = class AuthService {
         console.log('Generating tokens for user:', user);
         const accessToken = this.jwtService.sign(payload, {
             secret: this.configService.get('JWT_SECRET'),
-            expiresIn: '15m',
+            expiresIn: '1h',
         });
         const refreshToken = this.jwtService.sign(payload, {
             secret: this.configService.get('JWT_REFRESH_SECRET'),

@@ -15,13 +15,7 @@ export declare class AuthService {
         accessToken: string;
         refreshToken: string;
     }>;
-    validateUser(email: string, password: string): Promise<{
-        id: string;
-        name: string;
-        email: string;
-        createdAt: Date;
-        roleId: string;
-    }>;
+    validateUser(email: string, pass: string): Promise<any>;
     private generateTokens;
     getProfileById(userId: string): Promise<ProfileResponseDto>;
     updateProfile(userId: string, updateProfileDto: UpdateProfileDto): Promise<ProfileResponseDto>;
