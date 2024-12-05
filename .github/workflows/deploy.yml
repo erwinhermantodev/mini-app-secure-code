@@ -5,15 +5,11 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
 
     defaults:
       run:
         working-directory: ./backend
-
-    env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      JWT_EXPIRATION: ${{ secrets.JWT_EXPIRATION }}
 
     steps:
       - uses: actions/checkout@v4
@@ -34,7 +30,8 @@ jobs:
         with:
           host: "103.187.146.181"
           username: "erwindevmail"
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          envs: DATABASE_URL,JWT_SECRET,JWT_EXPIRATION
           script: |
             cd /home/erwindevmail/mini-app/backend
             git pull origin master
