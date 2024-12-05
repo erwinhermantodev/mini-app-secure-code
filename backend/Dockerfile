@@ -2,23 +2,22 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install required packages
-RUN apk add --no-cache python3 make g++
-
-# Install dependencies
+# Copy package files and install dependencies
 COPY package*.json ./
 RUN npm install
 
-# Copy source files
-COPY . .
-
-# Generate Prisma client
+# Copy Prisma schema and generate client
+COPY prisma ./prisma/
 RUN npx prisma generate
 
-# Build application
+# Copy source code and build
+COPY . .
 RUN npm run build
 
 EXPOSE 3000
 
-# Wait for database and start app
-CMD /bin/sh -c "npm run prisma:migrate:deploy && npm start"
+# Add script to handle Prisma initialization
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["docker-entrypoint.sh"]
