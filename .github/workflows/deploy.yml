@@ -19,6 +19,13 @@ jobs:
         with:
           node-version: "18"
 
+      - name: Debug secrets
+        run: |
+          echo "DATABASE_URL exists: ${{ secrets.DATABASE_URL != '' }}"
+          echo "JWT_SECRET exists: ${{ secrets.JWT_SECRET != '' }}"
+          echo "JWT_EXPIRATION exists: ${{ secrets.JWT_EXPIRATION != '' }}"
+          echo "SSH_PASSWORD exists: ${{ secrets.SSH_PASSWORD != '' }}"
+
       - name: Install dependencies
         run: npm install
 
@@ -32,8 +39,11 @@ jobs:
           username: "erwindevmail"
           password: ${{ secrets.SSH_PASSWORD }}
           envs: DATABASE_URL,JWT_SECRET,JWT_EXPIRATION
+          debug: true
           script: |
+            echo "Current directory: $(pwd)"
             cd /home/erwindevmail/mini-app/backend
+            echo "After cd: $(pwd)"
             git pull origin master
             npm install
             npm run build
