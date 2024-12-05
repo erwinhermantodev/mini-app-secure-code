@@ -1,18 +1,15 @@
 on:
   push:
     branches: [master]
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: master
-
     env:
       DATABASE_URL: ${{ vars.DATABASE_URL }}
       JWT_SECRET: ${{ vars.JWT_SECRET }}
       JWT_EXPIRATION: ${{ vars.JWT_EXPIRATION }}
       SSH_PASSWORD: ${{ vars.SSH_PASSWORD }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -22,15 +19,37 @@ jobs:
           echo "SSH_PASSWORD exists: ${{ vars.SSH_PASSWORD != '' }}"
           echo "DATABASE_URL exists: ${{ vars.DATABASE_URL != '' }}"
 
-      - name: Deploy to Server
+      - name: Copy docker-compose file
         uses: appleboy/ssh-action@master
         with:
           host: "103.187.146.181"
           username: "erwindevmail"
           password: ${{ vars.SSH_PASSWORD }}
           script: |
-            cd /home/erwindevmail/mini-app-secure-code/backend
+            mkdir -p /home/erwindevmail/mini-app/backend/docker
+            cat > /home/erwindevmail/mini-app/backend/docker/docker-compose.yml << 'EOL'
+            version: '3.8'
+            services:
+              backend:
+                build: ..
+                environment:
+                  - DATABASE_URL=${DATABASE_URL}
+                  - JWT_SECRET=${JWT_SECRET}
+                  - JWT_EXPIRATION=${JWT_EXPIRATION}
+                ports:
+                  - "3000:3000"
+                restart: always
+            EOL
+
+      - name: Deploy with Docker Compose
+        uses: appleboy/ssh-action@master
+        with:
+          host: "103.187.146.181"
+          username: "erwindevmail"
+          password: ${{ vars.SSH_PASSWORD }}
+          script: |
+            cd /home/erwindevmail/mini-app/backend
             git pull origin master
-            npm install
-            npm run build
-            pm2 restart backend
+            docker compose -f docker/docker-compose.yml down
+            docker compose -f docker/docker-compose.yml build --no-cache
+            docker compose -f docker/docker-compose.yml up -d
