@@ -52,8 +52,21 @@ const RegisterForm: React.FC = () => {
     }
 
     try {
-      await registerUser(formData.email, formData.name, formData.password);
-      navigate("/profile");
+      const response = await registerUser(
+        formData.email,
+        formData.name,
+        formData.password
+      );
+      console.log("response");
+      console.log(response);
+      if (response.accessToken) {
+        localStorage.setItem("token", response.accessToken);
+        // If registration is successful, navigate to the profile page
+        navigate("/profile");
+      } else {
+        // If registration fails, set an appropriate error message
+        setError(response.message || "Registration failed");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
