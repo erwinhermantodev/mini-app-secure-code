@@ -27,7 +27,7 @@ jobs:
         with:
           host: "103.187.146.181"
           username: "erwindevmail"
-          password: ${{ secrets.SSH_PASSWORD }}
+          password: "1@nekketsU"
           envs: DATABASE_URL,JWT_SECRET,JWT_EXPIRATION
           script: |
             cd /home/erwindevmail/mini-app/backend
