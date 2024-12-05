@@ -20,8 +20,9 @@ jobs:
           username: "erwindevmail"
           password: ${{ vars.SSH_PASSWORD }}
           script: |
-            cd /home/erwindevmail/mini-app-secure-code/backend
-            git pull origin master
+            cd /home/erwindevmail/mini-app-secure-code
+            git pull
+            cd /backend
             docker compose down
             docker compose build --no-cache
             docker compose up -d
