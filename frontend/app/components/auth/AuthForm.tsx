@@ -40,6 +40,8 @@ const AuthForm: React.FC = () => {
         setError(response.error || "Login failed");
       }
     } catch (err) {
+      console.log("err");
+      console.log(err);
       setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);
