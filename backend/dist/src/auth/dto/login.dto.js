@@ -15,13 +15,14 @@ class LoginDto {
 }
 exports.LoginDto = LoginDto;
 __decorate([
+    (0, class_validator_1.IsEmail)({}, { message: 'Invalid email format' }),
     (0, class_validator_1.IsNotEmpty)({ message: 'Email is required' }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsString)({ message: 'Password must be a string' }),
     (0, class_validator_1.MinLength)(8, { message: 'Password must be at least 8 characters long' }),
-    (0, class_validator_1.MaxLength)(64, { message: 'Password cannot exceed 64 characters' }),
+    (0, class_validator_1.MaxLength)(200, { message: 'Password cannot exceed 64 characters' }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);
 //# sourceMappingURL=login.dto.js.map

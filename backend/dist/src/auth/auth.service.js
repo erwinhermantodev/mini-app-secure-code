@@ -23,6 +23,27 @@ let AuthService = class AuthService {
         this.loginAttempts = new Map();
         setInterval(() => this.cleanupAttempts(), 15 * 60 * 1000);
     }
+    async decryptPassword(encryptedPassword, key) {
+        try {
+            const [ivBase64, encryptedBase64] = encryptedPassword.split(':');
+            if (!ivBase64 || !encryptedBase64) {
+                throw new Error('Invalid encrypted password format');
+            }
+            const iv = Uint8Array.from(atob(ivBase64), (c) => c.charCodeAt(0));
+            const encrypted = Uint8Array.from(atob(encryptedBase64), (c) => c.charCodeAt(0));
+            const cryptoKey = await crypto.subtle.importKey('raw', Uint8Array.from(atob(key), (c) => c.charCodeAt(0)), { name: 'AES-CBC', length: 256 }, false, ['decrypt']);
+            const decryptedBuffer = await crypto.subtle.decrypt({ name: 'AES-CBC', iv }, cryptoKey, encrypted);
+            return new TextDecoder().decode(decryptedBuffer);
+        }
+        catch (error) {
+            console.error('Decryption error:', error);
+            throw new common_1.UnauthorizedException('Invalid credentials');
+        }
+    }
+    getPasswordFromSplit(decryptedPassword) {
+        const parts = decryptedPassword.split('-');
+        return parts.slice(1).join('-');
+    }
     cleanupAttempts() {
         const now = Date.now();
         for (const [key, attempt] of this.loginAttempts.entries()) {
@@ -61,14 +82,39 @@ let AuthService = class AuthService {
         this.loginAttempts.delete(key);
     }
     async login(loginDto) {
-        const { email, password } = loginDto;
+        const { email, password: encryptedPassword } = loginDto;
         this.trackLoginAttempt(email);
-        const user = await this.prisma.user.findUnique({ where: { email } });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        try {
+            const key = 'tgK+Gkb9qVIRUSAaHahODfYwbSfW/t7FfugOoeB15jk=';
+            if (!key) {
+                throw new Error('Encryption key not configured');
+            }
+            const decryptedCombined = await this.decryptPassword(encryptedPassword, key);
+            console.log('decryptedCombined');
+            console.log(decryptedCombined);
+            const actualPassword = this.getPasswordFromSplit(decryptedCombined);
+            console.log('actualPassword');
+            console.log(actualPassword);
+            const user = await this.prisma.user.findUnique({
+                where: { email },
+            });
+            if (!user) {
+                throw new common_1.UnauthorizedException('Invalid credentials');
+            }
+            const isPasswordValid = await bcrypt.compare(actualPassword, user.password);
+            if (!isPasswordValid) {
+                throw new common_1.UnauthorizedException('Invalid credentials');
+            }
+            this.resetLoginAttempts(email);
+            return this.generateTokens(user);
+        }
+        catch (error) {
+            console.error('Login error:', error);
+            if (error instanceof common_1.UnauthorizedException) {
+                throw error;
+            }
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        this.resetLoginAttempts(email);
-        return this.generateTokens(user);
     }
     async register(registerDto) {
         const { email, password, name } = registerDto;

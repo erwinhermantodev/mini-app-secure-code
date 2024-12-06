@@ -14,7 +14,7 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
 };
 
 function createPassword(username: string, password: string): string {
-  return `${username}.${password}`;
+  return `${username}-${password}`;
 }
 
 // Function to encrypt the password using Web Crypto API

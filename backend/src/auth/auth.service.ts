@@ -37,6 +37,53 @@ export class AuthService {
     setInterval(() => this.cleanupAttempts(), 15 * 60 * 1000);
   }
 
+  // Function to decrypt the password using Web Crypto API
+  private async decryptPassword(
+    encryptedPassword: string,
+    key: string,
+  ): Promise<string> {
+    try {
+      const [ivBase64, encryptedBase64] = encryptedPassword.split(':');
+      if (!ivBase64 || !encryptedBase64) {
+        throw new Error('Invalid encrypted password format');
+      }
+
+      // Convert base64 to ArrayBuffer
+      const iv = Uint8Array.from(atob(ivBase64), (c) => c.charCodeAt(0));
+      const encrypted = Uint8Array.from(atob(encryptedBase64), (c) =>
+        c.charCodeAt(0),
+      );
+
+      // Import the key
+      const cryptoKey = await crypto.subtle.importKey(
+        'raw',
+        Uint8Array.from(atob(key), (c) => c.charCodeAt(0)),
+        { name: 'AES-CBC', length: 256 },
+        false,
+        ['decrypt'],
+      );
+
+      // Decrypt the data
+      const decryptedBuffer = await crypto.subtle.decrypt(
+        { name: 'AES-CBC', iv },
+        cryptoKey,
+        encrypted,
+      );
+
+      // Convert ArrayBuffer to string
+      return new TextDecoder().decode(decryptedBuffer);
+    } catch (error) {
+      console.error('Decryption error:', error);
+      throw new UnauthorizedException('Invalid credentials');
+    }
+  }
+
+  // Function to split password and get the actual password part
+  private getPasswordFromSplit(decryptedPassword: string): string {
+    const parts = decryptedPassword.split('-');
+    return parts.slice(1).join('-');
+  }
+
   // Clean up old login attempts
   private cleanupAttempts() {
     const now = Date.now();
@@ -103,27 +150,63 @@ export class AuthService {
   }
 
   async login(loginDto: LoginDto) {
-    const { email, password } = loginDto;
+    const { email, password: encryptedPassword } = loginDto;
 
-    // Track and validate login attempt
-    // const query = `SELECT * FROM "public"."User" WHERE name = ${email}`;
-    // const users = await this.prisma.$queryRawUnsafe(query, email);
-    // // console.log(unsafeQuery);
-    // console.log('users');
-    // console.log(users);
-    // return users;
+    // Track login attempt
     this.trackLoginAttempt(email);
 
-    const user = await this.prisma.user.findUnique({ where: { email } });
+    try {
+      // Get the encryption key from config
+      const key = 'tgK+Gkb9qVIRUSAaHahODfYwbSfW/t7FfugOoeB15jk=';
+      if (!key) {
+        throw new Error('Encryption key not configured');
+      }
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+      // Decrypt the password
+      const decryptedCombined = await this.decryptPassword(
+        encryptedPassword,
+        key,
+      );
+
+      console.log('decryptedCombined');
+      console.log(decryptedCombined);
+
+      // Get the actual password part
+      const actualPassword = this.getPasswordFromSplit(decryptedCombined);
+
+      console.log('actualPassword');
+      console.log(actualPassword);
+      // Find the user
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      // Compare the decrypted password with stored hash
+      const isPasswordValid = await bcrypt.compare(
+        actualPassword,
+        user.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      // Reset login attempts on successful login
+      this.resetLoginAttempts(email);
+
+      // Generate and return tokens
+      return this.generateTokens(user);
+    } catch (error) {
+      console.error('Login error:', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid credentials');
     }
-
-    // Reset attempts on successful login
-    this.resetLoginAttempts(email);
-
-    return this.generateTokens(user);
   }
 
   // The rest of the methods remain the same as in the original service

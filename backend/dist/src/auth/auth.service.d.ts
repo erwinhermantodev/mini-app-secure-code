@@ -8,6 +8,8 @@ export declare class AuthService {
     private configService;
     private loginAttempts;
     constructor(prisma: PrismaService, jwtService: JwtService, configService: ConfigService);
+    private decryptPassword;
+    private getPasswordFromSplit;
     private cleanupAttempts;
     private trackLoginAttempt;
     private resetLoginAttempts;
