@@ -14,7 +14,7 @@
     "@remix-run/node": "^2.15.0",
     "@remix-run/react": "^2.15.0",
     "@remix-run/serve": "^2.15.0",
-    "axios": "^1.7.8",
+    "axios": "^1.13.5",
     "helmet": "^8.0.0",
     "isbot": "^4.1.0",
     "lucide-react": "^0.462.0",
